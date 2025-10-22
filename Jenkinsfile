@@ -111,7 +111,7 @@ pipeline {
         ''' 
         sh """
       ansible-playbook -i localhost, -c local deploy/deploy-tomcat.yml \
-        --extra-vars "artifact=${artifactAbs} tomcat_user=${TC_USER} tomcat_password=${TC_PASS} tomcat_host=localhost tomcat_port=8082 tomcat_context=country"
+        --extra-vars "artifact=${artifactAbs} tomcat_user=${TC_USER} tomcat_password=${TC_PASS} tomcat_host=localhost tomcat_port=8082 tomcat_context=/country"
      """
 
       }
