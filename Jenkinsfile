@@ -63,7 +63,7 @@ pipeline {
                     pom = readMavenPom file: "pom.xml"
                     filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
                     if (filesByGlob.size() == 0) {
-                        error "❌ No artifact found in target/ to upload to Nexus"
+                        error "No artifact found in target/ to upload to Nexus"
                     }
                     artifactPath = filesByGlob[0].path
                     echo "📤 Uploading ${artifactPath} to Nexus"
