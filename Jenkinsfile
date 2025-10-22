@@ -91,6 +91,27 @@ pipeline {
                 }
             }
         }
+        stage('Deploy to Tomcat') {
+  steps {
+    withCredentials([usernamePassword(credentialsId: 'TOMCAT_CRED', usernameVariable: 'TC_USER', passwordVariable: 'TC_PASS')]) {
+      script {
+        def pom = readMavenPom file: 'pom.xml'
+        def filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
+        if (!filesByGlob) {
+          error "❌ No artifact found in target/ to deploy"
+        }
+        def artifactPath = filesByGlob[0].path
+        echo "🚀 Deploying ${artifactPath} to Tomcat via Ansible"
+
+        sh """
+          ansible-playbook -i deploy/inventory deploy/deploy-tomcat.yml \
+            --extra-vars "artifact=${artifactPath} tomcat_user=${TC_USER} tomcat_password=${TC_PASS} tomcat_port=8082 tomcat_context=/country"
+        """
+      }
+    }
+  }
+}
+
 
     }
 
