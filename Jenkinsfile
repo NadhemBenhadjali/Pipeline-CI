@@ -10,7 +10,7 @@ pipeline {
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = "localhost:8081"
-        NEXUS_REPOSITORY = "maven-1"
+        NEXUS_REPOSITORY = "maven-snapshots" 
         NEXUS_CREDENTIAL_ID = "NEXUS_CRED"
     }
 
