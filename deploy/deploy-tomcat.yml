@@ -22,20 +22,19 @@
       when: not war_stat.stat.exists
 
     # Deploy using Tomcat Manager text API (PUT upload)
-    - name: Deploy WAR via Tomcat Manager
-      uri:
-        url: "http://{{ tomcat_host }}:{{ tomcat_port }}/manager/text/deploy?path={{ tomcat_context }}&update=true"
+    - name: Deploy WAR via Tomcat Manager (PUT)
+      ansible.builtin.uri:
+        url: "http://{{ tomcat_user }}:{{ tomcat_password }}@{{ tomcat_host | default('localhost') }}:{{ tomcat_port }}/manager/text/deploy?path=/{{ tomcat_context | regex_replace('^/', '') }}&update=true"
         method: PUT
-        user: "{{ tomcat_user }}"
-        password: "{{ tomcat_password }}"
-        force_basic_auth: true
-        status_code: [200, 201, 204]
         headers:
-          Content-Type: "application/octet-stream"
+          Content-Type: application/octet-stream
         body: "{{ lookup('file', artifact) }}"
         body_format: raw
+        force_basic_auth: true
+        status_code: 200
         return_content: true
       register: deploy_result
+      no_log: true  
 
     - name: Show manager response
       debug:
