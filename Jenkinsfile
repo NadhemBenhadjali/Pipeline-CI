@@ -54,17 +54,13 @@ pipeline {
             }
         }
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('MySonarQubeServer') {
-                    sh '''
-                        ${SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=Pipeline-CI \
-                        -Dsonar.sources=src \
-                        -Dsonar.java.binaries=target/classes
-                    '''
-                }
-            }
+    steps {
+        withSonarQubeEnv(installationName: 'MySonarQubeServer', credentialsId: 'sonar') {
+            sh "mvn sonar:sonar -Dsonar.projectKey=country-service -Dsonar.projectName=country-service"
         }
+    }
+}
+
     }
 
 
