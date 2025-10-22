@@ -19,7 +19,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/riadhbelgacem/TP-CI-CD.git'
+                git branch: 'main', url: 'https://github.com/NadhemBenhadjali/Pipeline-CI'
             }
         }
 
