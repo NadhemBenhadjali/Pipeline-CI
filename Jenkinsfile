@@ -3,10 +3,11 @@ pipeline {
 
     tools {
         jdk 'JDK21'       
-        maven 'mymaven'    
+        maven 'mymaven'  
     }
-
+    
     environment {
+        SCANNER_HOME = tool 'MySonarScanner'
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = "localhost:8081"
