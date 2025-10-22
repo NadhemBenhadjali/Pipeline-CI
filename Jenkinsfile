@@ -3,14 +3,14 @@ pipeline {
 
     tools {
         jdk 'JDK21'       
-        maven 'M2_HOME'    
+        maven 'mymaven'  
     }
-
+    
     environment {
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = "localhost:8081"
-        NEXUS_REPOSITORY = "maven-1"
+        NEXUS_REPOSITORY = "maven-snapshots" 
         NEXUS_CREDENTIAL_ID = "NEXUS_CRED"
     }
 
@@ -18,7 +18,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/riadhbelgacem/TP-CI-CD.git'
+                git branch: 'main', url: 'https://github.com/NadhemBenhadjali/Pipeline-CI'
             }
         }
 
@@ -43,21 +43,23 @@ pipeline {
 
         stage('Package') {
             steps {
-                echo '📦 Packaging the application...'
+                echo 'Packaging the application...'
                 sh 'mvn clean package'
             }
         }
-
-        stage('SonarQube Analysis') {
+                stage('Build') {
             steps {
-                echo '📊 Running SonarQube code analysis...'
-                withSonarQubeEnv('MySonarQubeServer') {
-                    sh 'mvn verify sonar:sonar'
-                }
+                sh 'mvn clean package'
             }
         }
-
-        stage('Publish to Nexus Repository Manager') {
+       stage('SonarQube Analysis') {
+  steps {
+    withSonarQubeEnv('MySonarQubeServer') {
+      sh 'mvn -B sonar:sonar -Dsonar.projectKey=country-service'
+    }
+  }
+}
+     stage('Publish to Nexus Repository Manager') {
             steps {
                 script {
                     pom = readMavenPom file: "pom.xml"
@@ -89,28 +91,32 @@ pipeline {
                 }
             }
         }
-
         stage('Deploy to Tomcat') {
-            steps {
-                script {
-                    // Find the freshly built artifact
-                    pom = readMavenPom file: "pom.xml"
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-                    if (filesByGlob.size() == 0) {
-                        error "❌ No artifact found in target/ to deploy"
-                    }
-                    artifactPath = filesByGlob[0].path
-                    echo "🚀 Deploying ${artifactPath} to Tomcat via Ansible"
+  steps {
+    withCredentials([usernamePassword(credentialsId: 'TOMCAT_CRED', usernameVariable: 'TC_USER', passwordVariable: 'TC_PASS')]) {
+      script {
+        def pom = readMavenPom file: 'pom.xml'
+        def filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
+        if (!filesByGlob) { error "❌ No artifact found in target/ to deploy" }
+        def artifactPath = filesByGlob[0].path
+        echo "🚀 Deploying ${artifactPath} to Tomcat via Ansible"
 
-                    sh """
-                        ansible-playbook deploy/deploy-tomcat.yml \
-                            --extra-vars "artifact=${artifactPath}"
-                    """
-                }
-            }
-        }
+        // No Groovy interpolation => secrets stay masked
+        sh '''
+          set -e
+          export PATH="$HOME/.local/bin:$PATH"
+          ansible-playbook -i deploy/inventory deploy/deploy-tomcat.yml \
+            --extra-vars "artifact=''' + artifactPath + ''' tomcat_user=$TC_USER tomcat_password=$TC_PASS tomcat_port=8082 tomcat_context=/country"
+        '''
+      }
+    }
+  }
+}
+
+
 
     }
+
 
     post {
         always {
