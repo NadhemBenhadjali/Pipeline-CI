@@ -59,6 +59,38 @@ pipeline {
     }
   }
 }
+     stage('Publish to Nexus Repository Manager') {
+            steps {
+                script {
+                    pom = readMavenPom file: "pom.xml"
+                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
+                    if (filesByGlob.size() == 0) {
+                        error "No artifact found in target/ to upload to Nexus"
+                    }
+                    artifactPath = filesByGlob[0].path
+                    echo "📤 Uploading ${artifactPath} to Nexus"
+                    nexusArtifactUploader(
+                        nexusVersion: NEXUS_VERSION,
+                        protocol: NEXUS_PROTOCOL,
+                        nexusUrl: NEXUS_URL,
+                        groupId: pom.groupId,
+                        version: pom.version,
+                        repository: NEXUS_REPOSITORY,
+                        credentialsId: NEXUS_CREDENTIAL_ID,
+                        artifacts: [
+                            [artifactId: pom.artifactId,
+                             classifier: '',
+                             file: artifactPath,
+                             type: pom.packaging],
+                            [artifactId: pom.artifactId,
+                             classifier: '',
+                             file: "pom.xml",
+                             type: "pom"]
+                        ]
+                    )
+                }
+            }
+        }
 
     }
 
