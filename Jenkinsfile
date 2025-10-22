@@ -97,20 +97,22 @@ pipeline {
       script {
         def pom = readMavenPom file: 'pom.xml'
         def filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-        if (!filesByGlob) {
-          error "❌ No artifact found in target/ to deploy"
-        }
+        if (!filesByGlob) { error "❌ No artifact found in target/ to deploy" }
         def artifactPath = filesByGlob[0].path
         echo "🚀 Deploying ${artifactPath} to Tomcat via Ansible"
 
-        sh """
+        // No Groovy interpolation => secrets stay masked
+        sh '''
+          set -e
+          export PATH="$HOME/.local/bin:$PATH"
           ansible-playbook -i deploy/inventory deploy/deploy-tomcat.yml \
-            --extra-vars "artifact=${artifactPath} tomcat_user=${TC_USER} tomcat_password=${TC_PASS} tomcat_port=8082 tomcat_context=/country"
-        """
+            --extra-vars "artifact=''' + artifactPath + ''' tomcat_user=$TC_USER tomcat_password=$TC_PASS tomcat_port=8082 tomcat_context=/country"
+        '''
       }
     }
   }
 }
+
 
 
     }
