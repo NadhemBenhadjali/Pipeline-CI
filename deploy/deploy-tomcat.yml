@@ -1,24 +1,53 @@
-- name: Deploy WAR to Tomcat container
-  hosts: localhost
-  connection: local
+---
+- name: Deploy WAR to native Tomcat
+  hosts: all
+  gather_facts: false
   vars:
-    tomcat_container_name: tomcat
+    tomcat_host: localhost
+    tomcat_port: 8082
+    tomcat_user: deployer
+    tomcat_password: change-me
+    tomcat_context: /country
+    artifact: target/country.service-0.0.1-SNAPSHOT.war
+
   tasks:
-    - name: Find the WAR file
-      find:
-        paths: "{{ playbook_dir }}/../target"
-        patterns: "*.war"
-      register: war_files
-    
-    - name: Fail if no WAR found
+    - name: Assert artifact exists
+      stat:
+        path: "{{ artifact }}"
+      register: war_stat
+
+    - name: Fail if WAR missing
       fail:
-        msg: "No WAR file found in target/"
-      when: war_files.files | length == 0
-    
-    - name: Copy WAR into Tomcat container
-      command: >
-        docker cp {{ war_files.files[0].path }} 
-        {{ tomcat_container_name }}:/usr/local/tomcat/webapps/ROOT.war
-    
-    - name: Restart Tomcat container
-      command: docker restart {{ tomcat_container_name }}
+        msg: "WAR not found at {{ artifact }}"
+      when: not war_stat.stat.exists
+
+    # Deploy using Tomcat Manager text API (PUT upload)
+    - name: Deploy WAR via Tomcat Manager
+      uri:
+        url: "http://{{ tomcat_host }}:{{ tomcat_port }}/manager/text/deploy?path={{ tomcat_context }}&update=true"
+        method: PUT
+        user: "{{ tomcat_user }}"
+        password: "{{ tomcat_password }}"
+        force_basic_auth: true
+        status_code: [200, 201, 204]
+        headers:
+          Content-Type: "application/octet-stream"
+        body: "{{ lookup('file', artifact) }}"
+        body_format: raw
+        return_content: true
+      register: deploy_result
+
+    - name: Show manager response
+      debug:
+        var: deploy_result.content
+
+    # (Optional) quick smoke check against your API
+    - name: Wait for app to come up
+      uri:
+        url: "http://{{ tomcat_host }}:{{ tomcat_port }}{{ tomcat_context }}/getcountries"
+        method: GET
+        status_code: [200, 302]
+      register: smoke
+      retries: 15
+      delay: 2
+      until: smoke.status in [200, 302]
