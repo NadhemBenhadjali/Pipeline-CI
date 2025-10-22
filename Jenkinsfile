@@ -44,10 +44,28 @@ pipeline {
 
         stage('Package') {
             steps {
-                echo '📦 Packaging the application...'
+                echo 'Packaging the application...'
                 sh 'mvn clean package'
             }
         }
+                stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('MySonarQubeServer') {
+                    sh '''
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=Pipeline-CI \
+                        -Dsonar.sources=src \
+                        -Dsonar.java.binaries=target/classes
+                    '''
+                }
+            }
+        }
+    }
 
 
     }
