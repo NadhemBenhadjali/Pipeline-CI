@@ -52,12 +52,12 @@ pipeline {
                 sh 'mvn clean package'
             }
         }
-        stage('SonarQube Analysis') {
-    steps {
-        withSonarQubeEnv(installationName: 'MySonarQubeServer', credentialsId: 'sonar') {
-            sh "mvn sonar:sonar -Dsonar.projectKey=country-service -Dsonar.projectName=country-service"
-        }
+       stage('SonarQube Analysis') {
+  steps {
+    withSonarQubeEnv('MySonarQubeServer') {
+      sh 'mvn -B sonar:sonar -Dsonar.projectKey=country-service'
     }
+  }
 }
 
     }
