@@ -92,25 +92,32 @@ pipeline {
             }
         }
         stage('Deploy to Tomcat') {
-          steps {
-            withCredentials([usernamePassword(credentialsId: 'TOMCAT_CRED', usernameVariable: 'TC_USER', passwordVariable: 'TC_PASS')]) {
-              script {
-                def pom = readMavenPom file: 'pom.xml'
-                def filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-                if (!filesByGlob) { error "❌ No artifact found in target/ to deploy" }
-                def artifactPath = filesByGlob[0].path
-                echo "🚀 Deploying ${artifactPath} to Tomcat via Ansible"
-        
-                sh '''
-                  set -e
-                  export PATH="$HOME/.local/bin:$PATH"
-                  ansible-playbook -i localhost, -c local deploy/deploy-tomcat.yml \
-                    --extra-vars "artifact=''' + artifactPath + ''' tomcat_user=$TC_USER tomcat_password=$TC_PASS tomcat_host=localhost tomcat_port=8082 tomcat_context=/country"
-                '''
-              }
-            }
-          }
-        }
+  steps {
+    withCredentials([usernamePassword(credentialsId: 'TOMCAT_CRED', usernameVariable: 'TC_USER', passwordVariable: 'TC_PASS')]) {
+      script {
+        def pom = readMavenPom file: 'pom.xml'
+        def filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
+        if (!filesByGlob) { error "❌ No artifact found in target/ to deploy" }
+
+        def artifactRel = filesByGlob[0].path                    
+        def ws = pwd()                                          
+        def artifactAbs = "${ws}/${artifactRel}"                
+
+        echo "🚀 Deploying ${artifactRel} to Tomcat via Ansible"
+
+        sh '''
+          set -e
+          export PATH="$HOME/.local/bin:$PATH"
+        ''' 
+        sh """
+          ansible-playbook -i localhost, -c local deploy/deploy-tomcat.yml \\
+            --extra-vars "artifact=${artifactAbs} tomcat_user=${TC_USER} tomcat_password=${TC_PASS} tomcat_host=localhost tomcat_port=8082 tomcat_context=/country"
+        """
+      }
+    }
+  }
+}
+
         
 
     }
