@@ -24,14 +24,14 @@ pipeline {
 
         stage('Compile') {
             steps {
-                echo '🔧 Compiling source code...'
+                echo 'Compiling source code...'
                 sh 'mvn clean compile'
             }
         }
 
         stage('Test') {
             steps {
-                echo '🧪 Running unit tests...'
+                echo 'Running unit tests...'
                 sh 'mvn test'
             }
             post {
