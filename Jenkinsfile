@@ -1,263 +1,59 @@
-<<<<<<< HEAD
 pipeline {
-    agent any
+  agent any
 
-    tools {
-        jdk 'JDK21'       
-        maven 'mymaven'  
+  environment {
+    IMAGE_REPO     = 'nadhem9/my-country-service'
+    IMAGE_TAG      = "${BUILD_NUMBER}"
+    IMAGE_LATEST   = 'latest'
+    CONTAINER_NAME = 'my-country-service'   // container name on the host
+    SERVICE_PORT   = '8082'
+  }
+
+  stages {
+
+    stage('Build & Push Docker image') {
+      steps {
+        script {
+          // Build image with two tags: build number and latest
+          sh """
+            docker build \
+              -t ${IMAGE_REPO}:${IMAGE_TAG} \
+              -t ${IMAGE_REPO}:${IMAGE_LATEST} \
+              .
+          """
+
+          // Login to Docker Hub (password stored in Jenkins secret text 'dockerhub-pwd')
+          withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'DOCKERHUB_PWD')]) {
+            sh 'echo "$DOCKERHUB_PWD" | docker login -u nadhem9 --password-stdin'
+          }
+
+          // Push both tags
+          sh """
+            docker push ${IMAGE_REPO}:${IMAGE_TAG}
+            docker push ${IMAGE_REPO}:${IMAGE_LATEST}
+          """
+        }
+      }
     }
-    
-    environment {
-        NEXUS_VERSION = "nexus3"
-        NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "localhost:8081"
-        NEXUS_REPOSITORY = "maven-snapshots" 
-        NEXUS_CREDENTIAL_ID = "NEXUS_CRED"
-    }
 
-    stages {
+    stage('Deploy micro-service') {
+      steps {
+        script {
+          // Stop & remove only the target container if it exists
+          sh """
+            docker stop ${CONTAINER_NAME} || true
+            docker rm   ${CONTAINER_NAME} || true
+          """
 
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/NadhemBenhadjali/Pipeline-CI'
-            }
+          // Run the new container
+          sh """
+            docker run -d --name ${CONTAINER_NAME} \
+              -p ${SERVICE_PORT}:${SERVICE_PORT} \
+              --restart unless-stopped \
+              ${IMAGE_REPO}:${IMAGE_TAG}
+          """
         }
-
-        stage('Compile') {
-            steps {
-                echo 'Compiling source code...'
-                sh 'mvn clean compile'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                echo 'Running unit tests...'
-                sh 'mvn test'
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Package') {
-            steps {
-                echo 'Packaging the application...'
-                sh 'mvn clean package'
-            }
-        }
-                stage('Build') {
-            steps {
-                sh 'mvn clean package'
-            }
-        }
-       stage('SonarQube Analysis') {
-  steps {
-    withSonarQubeEnv('MySonarQubeServer') {
-      sh 'mvn -B sonar:sonar -Dsonar.projectKey=country-service'
+      }
     }
   }
 }
-     stage('Publish to Nexus Repository Manager') {
-            steps {
-                script {
-                    pom = readMavenPom file: "pom.xml"
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-                    if (filesByGlob.size() == 0) {
-                        error "No artifact found in target/ to upload to Nexus"
-                    }
-                    artifactPath = filesByGlob[0].path
-                    echo "📤 Uploading ${artifactPath} to Nexus"
-                    nexusArtifactUploader(
-                        nexusVersion: NEXUS_VERSION,
-                        protocol: NEXUS_PROTOCOL,
-                        nexusUrl: NEXUS_URL,
-                        groupId: pom.groupId,
-                        version: pom.version,
-                        repository: NEXUS_REPOSITORY,
-                        credentialsId: NEXUS_CREDENTIAL_ID,
-                        artifacts: [
-                            [artifactId: pom.artifactId,
-                             classifier: '',
-                             file: artifactPath,
-                             type: pom.packaging],
-                            [artifactId: pom.artifactId,
-                             classifier: '',
-                             file: "pom.xml",
-                             type: "pom"]
-                        ]
-                    )
-                }
-            }
-        }
-        //         stage('Deploy to Tomcat') {
-        //     steps {
-        //         script {
-        //             // Find the freshly built artifact
-        //             pom = readMavenPom file: "pom.xml"
-        //             filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-        //             if (filesByGlob.size() == 0) {
-        //                 error " No artifact found in target/ to deploy"
-        //             }
-        //             artifactPath = filesByGlob[0].path
-        //             echo "Deploying ${artifactPath} to Tomcat via Ansible"
-
-        //             sh """
-        //                 ansible-playbook deploy/deploy-tomcat.yml \
-        //                     --extra-vars "artifact=${artifactPath}"
-        //             """
-        //         }
-        //     }
-        // }
-
-        
-
-    }
-
-
-    post {
-        always {
-            echo 'Pipeline completed!'
-        }
-        success {
-            echo 'Build, Test, Package, Nexus Upload, and Deployment succeeded!'
-        }
-        failure {
-            echo 'Pipeline failed. Check console logs for details.'
-        }
-    }
-}
-=======
-pipeline {
-    agent any
-
-    tools {
-        jdk 'JDK21'       
-        maven 'mymaven'  
-    }
-    
-    environment {
-        NEXUS_VERSION = "nexus3"
-        NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "localhost:8081"
-        NEXUS_REPOSITORY = "maven-snapshots" 
-        NEXUS_CREDENTIAL_ID = "NEXUS_CRED"
-    }
-
-    stages {
-
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/NadhemBenhadjali/Pipeline-CI'
-            }
-        }
-
-        stage('Compile') {
-            steps {
-                echo '🔧 Compiling source code...'
-                sh 'mvn clean compile'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                echo '🧪 Running unit tests...'
-                sh 'mvn test'
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Package') {
-            steps {
-                echo 'Packaging the application...'
-                sh 'mvn clean package'
-            }
-        }
-                stage('Build') {
-            steps {
-                sh 'mvn clean package'
-            }
-        }
-       stage('SonarQube Analysis') {
-  steps {
-    withSonarQubeEnv('MySonarQubeServer') {
-      sh 'mvn -B sonar:sonar -Dsonar.projectKey=country-service'
-    }
-  }
-}
-     stage('Publish to Nexus Repository Manager') {
-            steps {
-                script {
-                    pom = readMavenPom file: "pom.xml"
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-                    if (filesByGlob.size() == 0) {
-                        error "No artifact found in target/ to upload to Nexus"
-                    }
-                    artifactPath = filesByGlob[0].path
-                    echo "📤 Uploading ${artifactPath} to Nexus"
-                    nexusArtifactUploader(
-                        nexusVersion: NEXUS_VERSION,
-                        protocol: NEXUS_PROTOCOL,
-                        nexusUrl: NEXUS_URL,
-                        groupId: pom.groupId,
-                        version: pom.version,
-                        repository: NEXUS_REPOSITORY,
-                        credentialsId: NEXUS_CREDENTIAL_ID,
-                        artifacts: [
-                            [artifactId: pom.artifactId,
-                             classifier: '',
-                             file: artifactPath,
-                             type: pom.packaging],
-                            [artifactId: pom.artifactId,
-                             classifier: '',
-                             file: "pom.xml",
-                             type: "pom"]
-                        ]
-                    )
-                }
-            }
-        }
-                stage('Deploy to Tomcat') {
-            steps {
-                script {
-                    // Find the freshly built artifact
-                    pom = readMavenPom file: "pom.xml"
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-                    if (filesByGlob.size() == 0) {
-                        error "❌ No artifact found in target/ to deploy"
-                    }
-                    artifactPath = filesByGlob[0].path
-                    echo "🚀 Deploying ${artifactPath} to Tomcat via Ansible"
-
-                    sh """
-                        ansible-playbook deploy/deploy-tomcat.yml \
-                            --extra-vars "artifact=${artifactPath}"
-                    """
-                }
-            }
-        }
-
-        
-
-    }
-
-
-    post {
-        always {
-            echo 'Pipeline completed!'
-        }
-        success {
-            echo 'Build, Test, Package, Nexus Upload, and Deployment succeeded!'
-        }
-        failure {
-            echo 'Pipeline failed. Check console logs for details.'
-        }
-    }
-}
->>>>>>> 10e5098 (up)
