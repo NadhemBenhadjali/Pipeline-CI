@@ -1,0 +1,20 @@
+version: '3.9'
+
+services:
+  country-service1:
+    build: .
+    image: nadhem9/country-service:1.0.0
+    container_name: country-service1
+    ports:
+      - "8087:8087"
+    expose:
+      - "8087"
+
+  country-service2:
+    build: .
+    image: nadhem9/country-service:1.0.0
+    container_name: country-service2
+    ports:
+      - "8088:8087"   # 8088 côté host -> 8087 dans le conteneur
+    expose:
+      - "8087"
