@@ -91,25 +91,25 @@ pipeline {
                 }
             }
         }
-                stage('Deploy to Tomcat') {
-            steps {
-                script {
-                    // Find the freshly built artifact
-                    pom = readMavenPom file: "pom.xml"
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-                    if (filesByGlob.size() == 0) {
-                        error "❌ No artifact found in target/ to deploy"
-                    }
-                    artifactPath = filesByGlob[0].path
-                    echo "🚀 Deploying ${artifactPath} to Tomcat via Ansible"
+        //         stage('Deploy to Tomcat') {
+        //     steps {
+        //         script {
+        //             // Find the freshly built artifact
+        //             pom = readMavenPom file: "pom.xml"
+        //             filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
+        //             if (filesByGlob.size() == 0) {
+        //                 error " No artifact found in target/ to deploy"
+        //             }
+        //             artifactPath = filesByGlob[0].path
+        //             echo "Deploying ${artifactPath} to Tomcat via Ansible"
 
-                    sh """
-                        ansible-playbook deploy/deploy-tomcat.yml \
-                            --extra-vars "artifact=${artifactPath}"
-                    """
-                }
-            }
-        }
+        //             sh """
+        //                 ansible-playbook deploy/deploy-tomcat.yml \
+        //                     --extra-vars "artifact=${artifactPath}"
+        //             """
+        //         }
+        //     }
+        // }
 
         
 
