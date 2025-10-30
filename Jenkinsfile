@@ -2,9 +2,9 @@ pipeline {
   agent any
 
   environment {
-    IMAGE_REPO   = 'nadhem9/my-country-service'
-    IMAGE_TAG    = "${BUILD_NUMBER}"
-    IMAGE_LATEST = 'latest'
+    IMAGE_REPO     = 'nadhem9/my-country-service'
+    IMAGE_TAG      = "${BUILD_NUMBER}"
+    IMAGE_LATEST   = 'latest'
     K8S_DEPLOYMENT = 'my-country-service'
     K8S_CONTAINER  = 'my-country-service'
   }
@@ -13,7 +13,7 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        git branch: 'main', url: 'https://github.com/NadhemBenhadjali/Pipeline-CI/'
+        git branch: 'main', url: 'https://github.com/NadhemBenhadjali/Pipeline-CI'
       }
     }
 
@@ -51,6 +51,9 @@ pipeline {
           kubeconfig(credentialsId: 'kubeconfig-file', serverUrl: '') {
             sh 'kubectl apply -f deployment.yaml'
             sh 'kubectl apply -f service.yaml'
+            sh "kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${IMAGE_REPO}:${IMAGE_TAG} --record || true"
+            sh "kubectl rollout status deployment/${K8S_DEPLOYMENT} --timeout=60s || true"
+          }
         }
       }
     }
@@ -61,6 +64,4 @@ pipeline {
       echo "Pipeline finished. Image=${IMAGE_REPO}:${IMAGE_TAG}"
     }
   }
-}
-
 }
