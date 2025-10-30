@@ -44,6 +44,15 @@ pipeline {
         }
       }
     }
+    stage('Test Kubernetes Connection') {
+  steps {
+    script {
+      kubeconfig(credentialsId: 'kubeconfig-file', serverUrl: '') {
+        sh 'kubectl get pods'
+      }
+    }
+  }
+}
 
     stage('Deploy to Kubernetes') {
       steps {
@@ -70,4 +79,5 @@ pipeline {
     }
   }
 }
+
 
