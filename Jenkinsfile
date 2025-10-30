@@ -44,16 +44,29 @@ pipeline {
         }
       }
     }
+
     stage('Test Kubernetes Connection') {
-  steps {
-    script {
-      kubeconfig(credentialsId: 'kubeconfig-file', serverUrl: '') {
-        sh 'kubectl get pods'
+      steps {
+        script {
+          kubeconfig(credentialsId: 'kubeconfig-file', serverUrl: '') {
+            sh 'kubectl get pods'
+          }
+        }
       }
     }
+
+    stage('Deploy to Kubernetes') {
+      steps {
+        script {
+          kubeconfig(credentialsId: 'kubeconfig-file', serverUrl: '') {
+            sh 'kubectl apply -f deployment.yaml'
+            sh 'kubectl apply -f service.yaml'
+          }
+        }
+      }
+    }
+
   }
-}
-stage('Deploy to Kubernetes') { steps { script { kubeconfig(credentialsId: 'kubeconfig-file', serverUrl: '') { sh 'kubectl apply -f deployment.yaml' sh 'kubectl apply -f service.yaml' } } } }
 
   post {
     always {
@@ -61,6 +74,3 @@ stage('Deploy to Kubernetes') { steps { script { kubeconfig(credentialsId: 'kube
     }
   }
 }
-
-
-
