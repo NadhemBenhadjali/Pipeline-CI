@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   tools {
-    maven 'myMaven'
+    maven 'mymaven'
   }
 
   stages {
@@ -72,3 +72,4 @@ PY
     failure { echo '❌ Ansible playbook execution failed!' }
   }
 }
+
