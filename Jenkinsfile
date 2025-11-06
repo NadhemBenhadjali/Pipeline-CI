@@ -20,51 +20,47 @@ pipeline {
       }
     }
 
-    stage('Deploy using Ansible playbook') {
-      steps {
-        withCredentials([
-          file(credentialsId: 'kubeconfig-file', variable: 'KUBECONFIG_FILE')
-        ]) {
-          sh '''
-            set -e
+   stage('Deploy using Ansible playbook (WSL + Conda)') {
+  steps {
+    withCredentials([file(credentialsId: 'kubeconfig-file', variable: 'KCFG_WIN')]) {
+      sh '''
+        set -e
+        # Convert the Windows temp path of the secret file to a WSL path
+        WSL_KCFG=$(wslpath "$KCFG_WIN")
 
-            # 1) Kubeconfig for k8s modules
-            export KUBECONFIG="$KUBECONFIG_FILE"
+        # Everything below runs INSIDE WSL Ubuntu
+        wsl.exe -d Ubuntu -- bash -lc '
+          set -e
+          export KUBECONFIG="'$WSL_KCFG'"
+          export ANSIBLE_PY=/home/nadhem/miniconda3/bin/python3
 
-            # 2) Use a clean virtualenv so the right Python has kubernetes+docker
-            python3 -m venv .venv
-            . .venv/bin/activate
-            pip install --upgrade pip
+          # Make sure required libs are in your Conda Python
+          $ANSIBLE_PY -m pip install --user --upgrade pip
+          $ANSIBLE_PY -m pip install --user ansible kubernetes docker requests requests-unixsocket
 
-            # 3) Ansible + Python libs needed by modules
-            pip install ansible kubernetes docker requests requests-unixsocket
+          # Collections (idempotent)
+          ansible-galaxy collection install -q kubernetes.core community.docker
 
-            # 4) Collections (idempotent)
-            ansible-galaxy collection install -q kubernetes.core community.docker
+          # Ensure Docker SDK talks to Linux socket in WSL
+          export DOCKER_HOST=unix:///var/run/docker.sock
 
-            # 5) Make Ansible use THIS Python
-            export ANSIBLE_PY="$PWD/.venv/bin/python"
-
-            # 6) Ensure Docker socket path is correct for Linux/WSL runs
-            export DOCKER_HOST="unix:///var/run/docker.sock"
-
-            # 7) (Optional) sanity checks
-            python - <<'PY'
+          # Sanity print
+          $ANSIBLE_PY - <<PY
 import sys, kubernetes, docker
 print("Interpreter:", sys.executable)
 print("k8s:", kubernetes.__version__, "docker:", docker.__version__)
 PY
 
-            # 8) Run the playbook against localhost
-            ansible-playbook -i localhost, -c local \
-              -e ANSIBLE_PY="$ANSIBLE_PY" \
-              -e kubeconfig_path="$KUBECONFIG" \
-              playbookCICD.yml
-          '''
-        }
-      }
+          # Run playbook (force Ansible to use Conda Python)
+          ansible-playbook -i localhost, -c local \
+            -e ANSIBLE_PY="$ANSIBLE_PY" \
+            -e kubeconfig_path="$KUBECONFIG" \
+            playbookCICD.yml
+        '
+      '''
     }
   }
+}
 
   post {
     always { cleanWs() }
@@ -72,4 +68,5 @@ PY
     failure { echo '❌ Ansible playbook execution failed!' }
   }
 }
+
 
