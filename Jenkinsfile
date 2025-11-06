@@ -1,8 +1,9 @@
+
 pipeline {
   agent any
 
   tools {
-    maven 'mymaven'   // <-- match the actual tool name configured in Jenkins
+    maven 'myMaven'
   }
 
   stages {
@@ -18,34 +19,32 @@ pipeline {
       }
     }
 
-    stage('Deploy using Ansible playbook (Conda)') {
+    stage('Deploy using Ansible playbook (venv)') {
       steps {
         withCredentials([file(credentialsId: 'kubeconfig-file', variable: 'KUBECONFIG_FILE')]) {
           sh '''
             set -e
-
             export KUBECONFIG="$KUBECONFIG_FILE"
-            export ANSIBLE_PY=/home/nadhem/miniconda3/bin/python3
             export DOCKER_HOST=unix:///var/run/docker.sock
             export PATH="$HOME/.local/bin:$PATH"
 
-            # Make sure required libs are installed into your Conda python
-            $ANSIBLE_PY -m pip install --user --upgrade pip
-            $ANSIBLE_PY -m pip install --user ansible kubernetes docker requests requests-unixsocket
-
-            # Collections (idempotent)
+            # Fresh, writable venv in the workspace (owned by jenkins)
+            python3 -m venv .venv
+            . .venv/bin/activate
+            pip install --upgrade pip
+            pip install ansible kubernetes docker requests requests-unixsocket
             ansible-galaxy collection install -q kubernetes.core community.docker
 
-            # Sanity print (shows the interpreter + versions we will use)
-            $ANSIBLE_PY - <<'PY'
+            # Sanity
+            python - <<'PY'
 import sys, kubernetes, docker
 print("Interpreter:", sys.executable)
 print("k8s:", kubernetes.__version__, "docker:", docker.__version__)
 PY
 
-            # Run the playbook forcing Ansible to use your Conda interpreter
+            # Use this venv's python as the interpreter
             ansible-playbook -i localhost, -c local \
-              -e ANSIBLE_PY="$ANSIBLE_PY" \
+              -e ANSIBLE_PY="$PWD/.venv/bin/python" \
               -e kubeconfig_path="$KUBECONFIG" \
               playbookCICD.yml
           '''
