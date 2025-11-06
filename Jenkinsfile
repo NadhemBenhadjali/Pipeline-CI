@@ -33,7 +33,7 @@ pipeline {
             . .venv/bin/activate
             pip install --upgrade pip
             pip install ansible kubernetes docker requests requests-unixsocket
-            ansible-galaxy collection install -q kubernetes.core community.docker
+            ansible-galaxy collection install kubernetes.core community.docker
 
             # Sanity
             python - <<'PY'
@@ -59,4 +59,5 @@ PY
     failure { echo '❌ Ansible playbook execution failed!' }
   }
 }
+
 
