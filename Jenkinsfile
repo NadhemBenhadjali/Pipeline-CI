@@ -1,76 +1,41 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    IMAGE_REPO     = 'nadhem9/my-country-service'
-    IMAGE_TAG      = "${BUILD_NUMBER}"
-    IMAGE_LATEST   = 'latest'
-    K8S_DEPLOYMENT = 'my-country-service'
-    K8S_CONTAINER  = 'my-country-service'
-  }
-
-  stages {
-
-    stage('Checkout') {
-      steps {
-        git branch: 'main', url: 'https://github.com/NadhemBenhadjali/Pipeline-CI'
-      }
+    tools {
+        maven 'mymaven'
     }
 
-    stage('Build (Maven)') {
-      steps {
-        sh 'mvn clean install -DskipTests=false'
-      }
-    }
-
-    stage('Build & Push Docker image') {
-      steps {
-        script {
-          sh """
-            docker build \
-              -t ${IMAGE_REPO}:${IMAGE_TAG} \
-              -t ${IMAGE_REPO}:${IMAGE_LATEST} \
-              .
-          """
-
-          withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'DOCKERHUB_PWD')]) {
-            sh 'echo "$DOCKERHUB_PWD" | docker login -u nadhem9 --password-stdin'
-          }
-
-          sh """
-            docker push ${IMAGE_REPO}:${IMAGE_TAG}
-            docker push ${IMAGE_REPO}:${IMAGE_LATEST}
-          """
+    stages {
+        stage('Checkout code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/NadhemBenhadjali/Pipeline-CI'
+            }
         }
-      }
-    }
 
-    stage('Test Kubernetes Connection') {
-      steps {
-        script {
-          kubeconfig(credentialsId: 'kubeconfig-file', serverUrl: '') {
-            sh 'kubectl get pods'
-          }
+        stage('Build maven') {
+            steps {
+                sh 'mvn clean install'
+            }
         }
-      }
-    }
 
-    stage('Deploy to Kubernetes') {
-      steps {
-        script {
-          kubeconfig(credentialsId: 'kubeconfig-file', serverUrl: '') {
-            sh 'kubectl apply -f deployment.yaml'
-            sh 'kubectl apply -f service.yaml'
-          }
+        stage('Deploy using Ansible playbook') {
+            steps {
+                script {
+                    sh 'ansible-playbook -i hosts playbookCICD.yml --check'
+                }
+            }
         }
-      }
     }
 
-  }
-
-  post {
-    always {
-      echo "Pipeline finished. Image=${IMAGE_REPO}:${IMAGE_TAG}"
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Ansible playbook executed successfully!'
+        }
+        failure {
+            echo 'Ansible playbook execution failed!'
+        }
     }
-  }
 }
