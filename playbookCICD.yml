@@ -5,8 +5,9 @@
 
   # Force Ansible to use your Conda Python by default; allow override via env ANSIBLE_PY
   vars:
-    ansible_python_interpreter: "{{ lookup('env','ANSIBLE_PY') | default('/home/nadhem/miniconda3/bin/python3', true) }}"
-    image_name: my-country-service
+    ansible_python_interpreter: "{{ lookup('env','ANSIBLE_PY') | default('/usr/bin/python3', true) }}"
+  
+  
     image_tag: latest
     dockerfile_path: "./"
     kubeconfig_path: "{{ lookup('env','KUBECONFIG') | default('~/.kube/config', true) }}"
