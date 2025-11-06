@@ -1,45 +1,51 @@
 ---
 - name: Build and Deploy Docker Image to Kubernetes
-  hosts: localhost  # Or your build/deployment server
+  hosts: localhost
   connection: local
 
   vars:
     image_name: my-country-service
     image_tag: latest
-    dockerfile_path: './'
-    docker_registry_username: "nadhem9"  
-    docker_registry_password: "nadhemaziz2003"  
+    dockerfile_path: "./"
     kubeconfig_path: "{{ lookup('env','KUBECONFIG') | default('~/.kube/config', true) }}"
+    docker_registry_username: "nadhem9"
+    # docker_registry_password: "{{ lookup('env','DOCKERHUB_PASS') | default('', true) }}"  # <- pass via env/credentials
 
   tasks:
-    - name: Log in to Docker Hub
+    # Remove this task entirely if the repo is public, or keep it if you need auth:
+    - name: Log in to Docker Hub (optional)
       community.general.docker_login:
         username: "{{ docker_registry_username }}"
-        password: "{{ docker_registry_password }}"   # Préférez Ansible Vault pour les secrets
-        # password: "{{ docker_hub_password_from_vault }}"
-        reauthorize: yes  # Re-authenticate even if credentials exist
+        password: "{{ docker_registry_password | default(omit) }}"
+        reauthorize: true
+      when: docker_registry_password is defined and docker_registry_password | length > 0
 
     - name: Build Docker image
-      docker_image:
+      community.docker.docker_image:
         build:
           path: "{{ dockerfile_path }}"
         name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
         source: build
         state: present
-        tag: "{{ image_tag }}"
 
-    - name: Push the Docker image to Docker Hub
-      docker_image:
+    - name: Push Docker image to Docker Hub
+      community.docker.docker_image:
         name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
-        tag: "{{ image_tag }}"
-        push: yes
+        push: true
         source: local
 
-    - name: Pull Docker image (optional, for verification or on target nodes)
-      docker_image:
+    - name: Pull Docker image (optional verify)
+      community.docker.docker_image:
         name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
-        tag: "{{ image_tag }}"
         source: pull
+
+    - name: Ensure namespace exists
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: jenkins
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
 
     - name: Apply Kubernetes Deployment
       kubernetes.core.k8s:
@@ -47,7 +53,7 @@
         namespace: jenkins
         src: deployment.yaml
         kubeconfig: "{{ kubeconfig_path }}"
-      
+
     - name: Apply Kubernetes Service
       kubernetes.core.k8s:
         state: present
