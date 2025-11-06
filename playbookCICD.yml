@@ -3,41 +3,33 @@
   hosts: localhost
   connection: local
 
+  # Use the interpreter we pass from Jenkins (ANSIBLE_PY). Fallback to /usr/bin/python3.
   vars:
+    ansible_python_interpreter: "{{ lookup('env','ANSIBLE_PY') | default('/usr/bin/python3', true) }}"
     image_name: my-country-service
     image_tag: latest
     dockerfile_path: "./"
     kubeconfig_path: "{{ lookup('env','KUBECONFIG') | default('~/.kube/config', true) }}"
-    docker_registry_username: "nadhem9"
-    # docker_registry_password: "{{ lookup('env','DOCKERHUB_PASS') | default('', true) }}"  # <- pass via env/credentials
+
+  # Make sure Docker SDK talks to the Linux socket in WSL/Linux
+  environment:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
 
   tasks:
-    # Remove this task entirely if the repo is public, or keep it if you need auth:
-    - name: Log in to Docker Hub (optional)
-      community.general.docker_login:
-        username: "{{ docker_registry_username }}"
-        password: "{{ docker_registry_password | default(omit) }}"
-        reauthorize: true
-      when: docker_registry_password is defined and docker_registry_password | length > 0
-
+    # If your image is already on Docker Hub and public, you can COMMENT OUT build/push.
     - name: Build Docker image
       community.docker.docker_image:
         build:
           path: "{{ dockerfile_path }}"
-        name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
+        name: "nadhem9/{{ image_name }}:{{ image_tag }}"
         source: build
         state: present
 
-    - name: Push Docker image to Docker Hub
+    - name: Push Docker image (public repo = no creds needed)
       community.docker.docker_image:
-        name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
+        name: "nadhem9/{{ image_name }}:{{ image_tag }}"
         push: true
         source: local
-
-    - name: Pull Docker image (optional verify)
-      community.docker.docker_image:
-        name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
-        source: pull
 
     - name: Ensure namespace exists
       kubernetes.core.k8s:
