@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout code') {
             steps {
-                git branch: 'master', url: 'https://github.com/Jamina-ENSI/Country-service.git'
+                git branch: 'main', url: 'https://github.com/NadhemBenhadjali/Pipeline-CI'
             }
         }
 
@@ -41,4 +41,5 @@ pipeline {
         }
     }
 }
+
 
