@@ -3,20 +3,19 @@
   hosts: localhost
   connection: local
 
-  # Use the interpreter we pass from Jenkins (ANSIBLE_PY). Fallback to /usr/bin/python3.
+  # Force Ansible to use your Conda Python by default; allow override via env ANSIBLE_PY
   vars:
-    ansible_python_interpreter: "{{ lookup('env','ANSIBLE_PY') | default('/usr/bin/python3', true) }}"
+    ansible_python_interpreter: "{{ lookup('env','ANSIBLE_PY') | default('/home/nadhem/miniconda3/bin/python3', true) }}"
     image_name: my-country-service
     image_tag: latest
     dockerfile_path: "./"
     kubeconfig_path: "{{ lookup('env','KUBECONFIG') | default('~/.kube/config', true) }}"
 
-  # Make sure Docker SDK talks to the Linux socket in WSL/Linux
+  # Make Docker SDK talk to the Unix socket (WSL)
   environment:
     DOCKER_HOST: "unix:///var/run/docker.sock"
 
   tasks:
-    # If your image is already on Docker Hub and public, you can COMMENT OUT build/push.
     - name: Build Docker image
       community.docker.docker_image:
         build:
@@ -25,7 +24,7 @@
         source: build
         state: present
 
-    - name: Push Docker image (public repo = no creds needed)
+    - name: Push Docker image
       community.docker.docker_image:
         name: "nadhem9/{{ image_name }}:{{ image_tag }}"
         push: true
@@ -39,14 +38,14 @@
         state: present
         kubeconfig: "{{ kubeconfig_path }}"
 
-    - name: Apply Kubernetes Deployment
+    - name: Apply Deployment
       kubernetes.core.k8s:
         state: present
         namespace: jenkins
         src: deployment.yaml
         kubeconfig: "{{ kubeconfig_path }}"
 
-    - name: Apply Kubernetes Service
+    - name: Apply Service
       kubernetes.core.k8s:
         state: present
         namespace: jenkins
