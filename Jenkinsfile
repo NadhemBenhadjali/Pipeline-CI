@@ -24,14 +24,8 @@ pipeline {
           file(credentialsId: 'kubeconfig-file', variable: 'KUBECONFIG_FILE')
         ]) {
           sh '''
-            export KUBECONFIG="$KUBECONFIG_FILE"
-
-            # Install required Ansible collections (if not yet installed)
-            ansible-galaxy collection install -q community.docker kubernetes.core
-
-            # Run the playbook
             ansible-playbook -i localhost, -c local \
-              -e kubeconfig_path="$KUBECONFIG" \
+              -e kubeconfig_path="$KUBECONFIG_FILE" \
               playbookCICD.yml
           '''
         }
@@ -51,3 +45,4 @@ pipeline {
     }
   }
 }
+
