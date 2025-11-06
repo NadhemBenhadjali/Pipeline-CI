@@ -1,53 +1,55 @@
 ---
 - name: Build and Deploy Docker Image to Kubernetes
-  hosts: localhost
+  hosts: localhost  # Or your build/deployment server
   connection: local
 
-  # Force Ansible to use your Conda Python by default; allow override via env ANSIBLE_PY
   vars:
-    ansible_python_interpreter: "{{ lookup('env','ANSIBLE_PY') | default('/usr/bin/python3', true) }}"
     image_name: my-country-service
     image_tag: latest
-    dockerfile_path: "./"
-    kubeconfig_path: "{{ lookup('env','KUBECONFIG') | default('~/.kube/config', true) }}"
-
-  # Make Docker SDK talk to the Unix socket (WSL)
-  environment:
-    DOCKER_HOST: "unix:///var/run/docker.sock"
+    dockerfile_path: './'
+    docker_registry_username: "nadhem9"   # ❗️Remplacez par votre username Docker Hub (ou passez-le en variable -e)
+    docker_registry_password: "nadhemaziz2003"   # ❗️Utilisez Ansible Vault ou une variable d'environnement
 
   tasks:
+    - name: Log in to Docker Hub
+      community.general.docker_login:
+        username: "{{ docker_registry_username }}"
+        password: "{{ docker_registry_password }}"   # Préférez Ansible Vault pour les secrets
+        # password: "{{ docker_hub_password_from_vault }}"
+        reauthorize: yes  # Re-authenticate even if credentials exist
+
     - name: Build Docker image
-      community.docker.docker_image:
+      docker_image:
         build:
           path: "{{ dockerfile_path }}"
-        name: "nadhem9/{{ image_name }}:{{ image_tag }}"
+        name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
         source: build
         state: present
+        tag: "{{ image_tag }}"
 
-    - name: Push Docker image
-      community.docker.docker_image:
-        name: "nadhem9/{{ image_name }}:{{ image_tag }}"
-        push: true
+    - name: Push the Docker image to Docker Hub
+      docker_image:
+        name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
+        tag: "{{ image_tag }}"
+        push: yes
         source: local
 
-    - name: Ensure namespace exists
-      kubernetes.core.k8s:
-        api_version: v1
-        kind: Namespace
-        name: jenkins
-        state: present
-        kubeconfig: "{{ kubeconfig_path }}"
+    - name: Pull Docker image (optional, for verification or on target nodes)
+      docker_image:
+        name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
+        tag: "{{ image_tag }}"
+        source: pull
 
-    - name: Apply Deployment
+    - name: Apply Kubernetes Deployment
       kubernetes.core.k8s:
         state: present
         namespace: jenkins
         src: deployment.yaml
-        kubeconfig: "{{ kubeconfig_path }}"
+        kubeconfig: config  # Chemin vers votre fichier kubeconfig
 
-    - name: Apply Service
+    - name: Apply Kubernetes Service
       kubernetes.core.k8s:
         state: present
         namespace: jenkins
         src: service.yaml
-        kubeconfig: "{{ kubeconfig_path }}"
+        kubeconfig: config
