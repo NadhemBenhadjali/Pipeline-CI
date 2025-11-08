@@ -25,9 +25,7 @@ pipeline {
         stage('Check Python Interpreter') {
             steps {
                 script {
-                    sh 'which python'
-                    sh 'python --version'
-                    sh 'python3 --version'
+                    sh 'python --version'  // Add this line to print the Python version
                 }
             }
         }
@@ -55,5 +53,6 @@ pipeline {
         }
     }
 }
+
 
 
