@@ -25,7 +25,7 @@ pipeline {
         stage('Check Python Interpreter') {
             steps {
                 script {
-                    sh 'python --version'  // Add this line to print the Python version
+                    sh '/home/nadhem/miniconda3/bin/python --version'  // Add this line to print the Python version
                 }
             }
         }
@@ -53,6 +53,7 @@ pipeline {
         }
     }
 }
+
 
 
 
