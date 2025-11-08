@@ -19,6 +19,7 @@
         username: "{{ docker_registry_username }}"
         password: "{{ docker_registry_password }}"   # Préférez Ansible Vault pour les secrets
         # password: "{{ docker_hub_password_from_vault }}"
+        docker_host: unix:///var/run/docker.sock  # Docker Host URL
         reauthorize: yes  # Re-authenticate even if credentials exist
 
     - name: Build Docker image
