@@ -2,6 +2,8 @@
 - name: Build and Deploy Docker Image to Kubernetes
   hosts: localhost  # Or your build/deployment server
   connection: local
+  gather_facts: false  # Désactiver facts pour éviter l'erreur Python
+
 
   vars:
     image_name: my-country-service
