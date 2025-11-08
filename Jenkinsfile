@@ -3,6 +3,8 @@ pipeline {
 
     tools {
         maven 'mymaven'
+        jdk 'JDK21'        // Must match the name in "Global Tool Configuration"
+
     }
 
     environment {
@@ -45,6 +47,7 @@ pipeline {
         }
     }
 }
+
 
 
 
