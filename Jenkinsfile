@@ -29,7 +29,7 @@ pipeline {
                     sh 'cp $KUBECONFIG config'
 
                     // Exécuter le playbook Ansible
-                    sh 'ansible-playbook -i hosts playbookCICD.yml'
+                    sh 'ansible-playbook -i hosts playbookCICD.yml --check'
                 }
             }
         }
@@ -47,6 +47,7 @@ pipeline {
         }
     }
 }
+
 
 
 
