@@ -17,7 +17,7 @@ pipeline {
         }
         stage('Build maven') {
             steps {
-                sh 'mvn clean install -DskipTests'
+                sh 'mvn clean install'
             }
         }
         stage('Deploy using Ansible playbook') {
@@ -45,4 +45,5 @@ pipeline {
         }
     }
 }
+
 
