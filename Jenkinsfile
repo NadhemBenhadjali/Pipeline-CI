@@ -19,9 +19,9 @@ pipeline {
         stage('Install Python dependencies') {
             steps {
                 script {
-                    // Mettre à jour pip et installer Kubernetes et Ansible pour /usr/bin/python3
-                    sh '/usr/bin/python3 -m pip install --upgrade pip'  // Assurez-vous que pip est à jour
-                    sh '/usr/bin/python3 -m pip install kubernetes ansible'  // Installer kubernetes et ansible
+                    // Mettre à jour pip et installer Kubernetes et Ansible
+                    sh 'pip install --upgrade pip'  // Met à jour pip
+                    sh 'pip install kubernetes ansible'  // Installe kubernetes et ansible
                 }
             }
         }
@@ -35,8 +35,8 @@ pipeline {
         stage('Check Python Interpreter') {
             steps {
                 script {
-                    // Vérifier la version de Python pour s'assurer que /usr/bin/python3 est utilisé
-                    sh '/usr/bin/python3 --version'
+                    // Vérifier la version de Python
+                    sh 'python --version'  // Ou 'python3 --version' si nécessaire
                 }
             }
         }
@@ -47,7 +47,7 @@ pipeline {
                     // Copier le kubeconfig dans le workspace
                     sh 'cp $KUBECONFIG config'
 
-                    // Exécuter le playbook Ansible avec le Python configuré dans /usr/bin/python3
+                    // Exécuter le playbook Ansible
                     sh 'ansible-playbook -i hosts playbookCICD.yml -vvvv'
                 }
             }
