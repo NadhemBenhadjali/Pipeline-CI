@@ -2,15 +2,12 @@
 - name: Build and Deploy Docker Image to Kubernetes
   hosts: localhost
   connection: local
-  gather_facts: false  # Disable fact gathering to avoid Python errors
-
   vars:
     image_name: my-country-service
     image_tag: latest
     dockerfile_path: './'
     docker_registry_username: "nadhem9"
     docker_registry_password: "nadhemaziz2003"
-    ansible_python_interpreter: "/home/nadhem/miniconda3/bin/python"
 
 
   tasks:
