@@ -25,13 +25,18 @@
         source: build
         state: present
         tag: "{{ image_tag }}"
-
+    - name: Verify Docker image exists
+      command: "docker images -q nadhem9/my-country-service:latest"
+      register: image_check
+      failed_when: image_check.stdout == ""
+    
     - name: Push the Docker image to Docker Hub
       docker_image:
         name: "{{ docker_registry_username }}/{{ image_name }}:{{ image_tag }}"
         tag: "{{ image_tag }}"
         push: yes
         source: local
+      when: image_check.stdout != ""
 
     - name: Pull Docker image (optional, for verification or on target nodes)
       docker_image:
