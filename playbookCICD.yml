@@ -9,7 +9,7 @@
     image_tag: latest
     dockerfile_path: './'
     docker_registry_username: "nadhem9"   # Replace with your Docker Hub username
-    docker_registry_password: "{{ lookup('ansible.builtin.vault', 'docker_registry_password') }}"   # Use Ansible Vault
+    docker_registry_password: "nadhemaziz2003"   # Docker Hub password in plain text
     ansible_python_interpreter: "/home/nadhem/miniconda3/bin/python"
 
   tasks:
