@@ -1,5 +1,5 @@
 #FROM openjdk:21-oracle
-FROM openjdk:latest
+FROM openjdk:21-jdk-slim
 WORKDIR /app
 
 # copy the executable Spring Boot WAR
