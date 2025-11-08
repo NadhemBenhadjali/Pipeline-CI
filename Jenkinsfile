@@ -8,7 +8,6 @@ pipeline {
     environment {
         KUBECONFIG = credentials('kubeconfig-file')
         ANSIBLE_PYTHON_INTERPRETER = '/home/nadhem/miniconda3/bin/python'
-        DOCKER_HOST = 'unix:///var/run/docker-cli.sock'
     }
 
     stages {
@@ -54,6 +53,7 @@ pipeline {
         }
     }
 }
+
 
 
 
