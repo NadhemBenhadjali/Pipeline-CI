@@ -22,7 +22,15 @@ pipeline {
                 sh 'mvn clean install -DskipTests'
             }
         }
-
+        stage('Check Python Interpreter') {
+            steps {
+                script {
+                    sh 'which python'
+                    sh 'python --version'
+                    sh 'python3 --version'
+                }
+            }
+        }
         stage('Deploy using Ansible playbook') {
             steps {
                 script {
@@ -47,4 +55,5 @@ pipeline {
         }
     }
 }
+
 
