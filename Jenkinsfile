@@ -5,6 +5,10 @@ pipeline {
         maven 'mymaven'
     }
 
+    environment {
+        KUBECONFIG = credentials('kubeconfig-file')
+    }
+
     stages {
         stage('Checkout code') {
             steps {
@@ -21,7 +25,9 @@ pipeline {
         stage('Deploy using Ansible playbook') {
             steps {
                 script {
-                    // Exécution en mode check pour vérifier la syntaxe et les dépendances
+                    // Copier le kubeconfig dans le workspace
+                    sh 'cp $KUBECONFIG config'
+                    
                     sh 'ansible-playbook -i hosts playbookCICD.yml'
                 }
             }
@@ -30,16 +36,13 @@ pipeline {
 
     post {
         always {
-            // Nettoyage après chaque build
             cleanWs()
         }
         success {
-            echo 'Ansible playbook executed successfully!'
+            echo 'Pipeline executed successfully!'
         }
         failure {
-            echo 'Ansible playbook execution failed!'
+            echo 'Pipeline execution failed!'
         }
     }
 }
-
-
