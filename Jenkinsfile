@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         KUBECONFIG = credentials('kubeconfig-file')
+        ANSIBLE_PYTHON_INTERPRETER = '/home/nadhem/miniconda3/bin/python'
     }
 
     stages {
@@ -46,3 +47,4 @@ pipeline {
         }
     }
 }
+
