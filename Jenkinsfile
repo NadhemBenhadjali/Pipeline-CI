@@ -6,11 +6,6 @@ pipeline {
         jdk 'JDK21'        // Must match the name in "Global Tool Configuration"
 
     }
-
-    environment {
-        KUBECONFIG = credentials('kubeconfig-file')
-    }
-
     stages {
         stage('Checkout code') {
             steps {
@@ -25,9 +20,6 @@ pipeline {
         stage('Deploy using Ansible playbook') {
             steps {
                 script {
-                    // Copier le kubeconfig dans le workspace
-                    sh 'cp $KUBECONFIG config'
-
                     // Exécuter le playbook Ansible
                     sh 'ansible-playbook -i hosts playbookCICD.yml --check'
                 }
@@ -47,6 +39,7 @@ pipeline {
         }
     }
 }
+
 
 
 
