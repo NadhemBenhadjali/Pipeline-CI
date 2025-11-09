@@ -21,7 +21,7 @@ pipeline {
             steps {
                 script {
                     // Exécuter le playbook Ansible
-                    sh 'ansible-playbook -i hosts playbookCICD.yml --check'
+                    sh 'ansible-playbook -i hosts playbookCICD.yml'
                 }
             }
         }
@@ -39,6 +39,7 @@ pipeline {
         }
     }
 }
+
 
 
 
